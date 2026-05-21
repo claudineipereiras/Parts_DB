@@ -1,0 +1,87 @@
+Escooter Parts Database
+
+Ideas UX / UI
+Light theme
+Main idea of design is to have left column for the sections of the system that will be:
+Top left title
+Escooter Parts Database
+
+Top left sections
+ - Parts
+ - Diagrams
+ 
+ Bottom left sections
+ - System settings
+ - User settings
+ 
+1. Parts View
+ The parts page will be a simple navigation with a list of all parts. 
+ the sections can Be a compact view. to focus on the list being more visible on the third section.
+ the page will not load the parts to improve speed.
+ the parts will load once scooter is selected
+ the parts will be filtered once the model is selected
+ user should be able to add, edit and delete parts as well as add bulk parts.
+ The photo columns should not be in the table. Instead, a photo view will be on the right page, next to the parts list, and it will be displayed when user click on the part on the list.
+ 
+2. Diagrams View
+ The diagrams will focus on a picture of the entire scooter, taking most of the space on the screen, centered, where user can see the appearance of it. 
+ On the right top of this page there should be two buttons: create and edit a diagram. on the top right there hsould be two button: Save and delete.
+ below that line, there should be fields for search: Brand, Model and Description of the scooter. same fields used when creating a new scooter diagram
+ The picture frame should have the upload button for the user to upload the picture of the diagram.
+ On the right side, there should be a list of all parts associated with scooter. This list will have the number, SKU and description of each part.
+ The picture of the scooter will have the numbers that will indicate the part of the scooter. 
+ 
+3. Users View
+Only admin will have access to this view and it will be a full list of users on a table with the following fields: ID, Date Registered, Full Name, email, last OTP used, Status (Active, Inactive, Requested).
+On the right top of this page there should be two buttons: create and edit a user. in each line of user there should be two buttons: Save and delete.
+ 
+Flow descriptions
+1. Login Page:
+Login flow:
+ - The login View should have the login and sign up button at the center of the screen
+ - When user press login, the field email and the button submit should appear.
+ - User type the email and click in submit.
+ - System should send one time code to the email.
+ - After that the system will prompt 6 digit one time code for User to type the right code into it.
+ - having the right code, screen should change to the home page. 
+ 
+ Sign Up flow:
+ - When user click in sign up system will display two fields and two buttons: Full Name and email, request and cancel:
+ - user should type Full name and email and click in request.
+ - After that system should show a screen with the message: request sent. You will get an email when approved.  
+ - System then should go back to home page. 
+ - If customer click in cancel, go back to home screen.
+ 
+Log out flow:
+ - User click in log out button on the left side.
+ - system will popup with a message saying: you are leaving the system. The button should be Confirm on the right and cancel on the left. 
+
+
+2 - Admin Request approval flow
+ - There should be a user management view where it is possible to see the following information: ID, Date Registered, Full Name, email, last OTP used, Status (Active, Inactive, Requested).
+ - This data will be displayed in a table view and a button to edit and delete should be available. 
+ - Admin will approve a new user with the following flow
+ - In the USer management view admin will check users with status requested.
+ - Admin should review details to make sure they are correct.
+ - Admin should change status to Active.
+ - System send an email to the respective user to confirm login was created. 
+
+3 - Addin scooters Flow
+ - 
+ 
+4 - Add a new part flow
+ - When user click on add add part, popup appears with the fields to be filles in: id is visible but not editable,sku, description,
+ make, model and  status. The photo button should be available if user has photo to upload. 
+ - user click in save and system will add part to the data base and close popup.
+ - if user click cancel button in the popup, pop up closes.
+ - if user click Import bulk CSV will open a pop up to select the csv file to upload a csv file with the fields for the tabble. in the popup, there should be a example of how to import the csv: Your CSV file should be saved as comma separator and the following order: sku, description, make, model and  status Before import it, the system should previously verify evey item to make sure its consistency. 
+ - if the csv contains errors, do not import to the database. show an alert "your csv file contains errors. Please check validation before import it.
+ - if the csv is consistent, import to database and show the success mesage and the number of parts imported.
+ - user may update photos will be updated later 
+ 
+5 - Updating photo to the part.
+ - The photo of the part should be stored in the folder uploads. a path to the photo will be saved in the field photo_path of the part table. 
+ - When photo is in the folder, rename title as the SKU part the was assigned. 
+ - photo will be automatically saved and enabled to view.
+ 
+ 

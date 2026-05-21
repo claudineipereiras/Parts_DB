@@ -1,0 +1,48 @@
+USERS
+ - id
+ - Date Registered
+ - Full Name
+ - Email
+ - Last OTP
+ - Status: Active, Inactive, Requested
+
+PARTS
+ - id
+ - sku (unique - not auto input)
+ - description
+ - id_make
+ - id_model
+ - photo_path
+ - status: Active, Inactive, Discontinued
+
+BRAND
+ - id
+ - Name
+ - Status: Active, Inactive
+
+COMPATIBILITY
+ - id
+ - sku_part
+ - id_escooter
+
+ESCOOTER
+ - id
+ - id_brand
+ - model
+ - Description
+ - date_launched
+ - Battery voltage
+ - Battery Capacity
+ - Motor Watt
+ - Charger Voltage
+ - Status: Active, Inactive, discontinued
+
+DIAGRAM
+ - id
+ - id_escooter
+ - Diagram_picture
+ 
+ LIST_DIAGRAM
+ - id_part
+ - id_diagram
+ 
