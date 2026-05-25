@@ -17,8 +17,8 @@ async function createAdmin() {
         
         // Use INSERT IGNORE in case admin@example.com already exists
         await connection.query(
-            'INSERT IGNORE INTO users (full_name, email, password_hash, status) VALUES (?, ?, ?, ?)', 
-            ['Admin User', 'admin@example.com', hash, 'Active']
+            'INSERT IGNORE INTO users (full_name, email, password_hash, status, role) VALUES (?, ?, ?, ?, ?)', 
+            ['Admin User', 'admin@example.com', hash, 'Active', 'Admin']
         );
 
         // Also update any other users that might have been created to 'Active'

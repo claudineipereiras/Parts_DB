@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
+const admin = require('../middleware/admin');
 
-// GET all users (Protected)
-router.get('/', auth, async (req, res) => {
+// GET all users (Protected to Admin only)
+router.get('/', [auth, admin], async (req, res) => {
   try {
     const [users] = await db.query('SELECT id, date_registered, full_name, email, status FROM users ORDER BY id DESC');
     res.json(users);
@@ -14,8 +15,8 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// PUT update user status (Protected)
-router.put('/:id', auth, async (req, res) => {
+// PUT update user status (Protected to Admin only)
+router.put('/:id', [auth, admin], async (req, res) => {
   const { status, full_name, email } = req.body;
   const userId = req.params.id;
 
@@ -50,8 +51,8 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// DELETE user (Protected)
-router.delete('/:id', auth, async (req, res) => {
+// DELETE user (Protected to Admin only)
+router.delete('/:id', [auth, admin], async (req, res) => {
   const userId = req.params.id;
 
   try {

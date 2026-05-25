@@ -13,6 +13,14 @@ const PrivateRoute = ({ children }) => {
   return token ? children : <Navigate to="/login" />;
 };
 
+// Admin-only route guard
+const AdminRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  if (!token) return <Navigate to="/login" />;
+  return user.role === 'Admin' ? children : <Navigate to="/" />;
+};
+
 const Dashboard = () => (
   <div>
     <h2>Welcome to Escooter Database</h2>
@@ -32,7 +40,7 @@ const App = () => {
           <Route path="escooters" element={<Escooters />} />
           <Route path="diagrams" element={<Diagrams />} />
           <Route path="settings" element={<div>System Settings Coming Soon</div>} />
-          <Route path="users" element={<Users />} />
+          <Route path="users" element={<AdminRoute><Users /></AdminRoute>} />
         </Route>
       </Routes>
     </Router>

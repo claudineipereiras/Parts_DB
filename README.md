@@ -10,7 +10,7 @@ The Escooter Parts Database is a modernized, full-stack web application built to
 
 ### Frontend
 *   **Framework**: React.js (via Vite)
-*   **Routing**: React Router DOM (`v6`)
+*   **Routing**: React Router DOM (`v7`)
 *   **HTTP Client**: Axios
 *   **Styling**: Pure CSS (Vanilla) utilizing a centralized variable system (`index.css`) for a premium, light-themed aesthetic. No external styling libraries like Tailwind or Bootstrap are used to ensure maximum control.
 *   **Icons**: Lucide React
@@ -18,13 +18,13 @@ The Escooter Parts Database is a modernized, full-stack web application built to
 ### Backend
 *   **Runtime**: Node.js
 *   **Framework**: Express.js
-*   **Database Client**: `mysql2` (Promise-based)
+*   **Database Client**: `mysql2` (Promise-based connection pool)
 *   **Authentication**: `jsonwebtoken` (JWT) and `bcrypt` (Password hashing)
 *   **File Uploads**: `multer` (Handling images and CSVs)
 *   **Data Processing**: `csv-parser` (For high-speed stream parsing of bulk data)
 
 ### Database
-*   **Engine**: MySQL / MariaDB
+*   **Engine**: MySQL / MariaDB (v5.7+ or v10.4+)
 
 ---
 
@@ -32,7 +32,9 @@ The Escooter Parts Database is a modernized, full-stack web application built to
 
 The relational database (`parts_db`) is heavily normalized to ensure data integrity.
 
-*   `users`: Manages administrative access (`id`, `full_name`, `email`, `password_hash`, `status`). Statuses include *Active*, *Inactive*, and *Requested*.
+*   `users`: Manages administrative access (`id`, `date_registered`, `full_name`, `email`, `password_hash`, `status`, `role`). 
+    *   *Statuses*: `Active`, `Inactive`, `Requested`
+    *   *Roles*: `Admin`, `User` (Defaults to `User` for self-registered accounts).
 *   `brand`: Stores escooter manufacturers (`id`, `name`, `status`).
 *   `escooter`: Stores detailed technical specs for models, linked to a brand (`id`, `id_brand`, `model`, `battery_voltage`, `motor_watt`, etc.).
 *   `parts`: The core inventory table. Linked to both a brand and an escooter model (`id`, `sku`, `description`, `id_make`, `id_model`, `photo_path`).
@@ -43,10 +45,15 @@ The relational database (`parts_db`) is heavily normalized to ensure data integr
 
 ## 4. Core Features & Modules
 
-### 4.1. Authentication & User Management
+### 4.1. Authentication & Role-Based Access Control (RBAC)
 *   **Registration/Login**: Standard email and hashed-password authentication via `/api/auth`.
-*   **Admin Dashboard**: `/users` route allows administrators to approve (`Requested` -> `Active`), deactivate, or delete user accounts.
-*   **Security**: All API routes (except login/register) are protected by a JWT middleware verification step (`backend/middleware/auth.js`).
+*   **Access Levels**:
+    *   **Admin**: Only administrators (`role = 'Admin'`) can access the User settings dashboard to approve (`Requested` -> `Active`), deactivate, or delete user accounts.
+    *   **User**: Regular users can view parts, escooters, and diagrams but are strictly blocked from user management.
+*   **Multi-layered Security**: 
+    *   *API protection*: Routes are guarded with `auth` and `admin` middlewares (`backend/middleware/admin.js`).
+    *   *UI protection*: Non-admin users cannot see the "User settings" item in the sidebar layout.
+    *   *Router protection*: React router guards (`AdminRoute`) intercept unauthorized direct navigation.
 
 ### 4.2. Escooters & Brands Module
 *   **Management**: CRUD operations for Escooter models and their technical specifications.
@@ -76,31 +83,64 @@ The relational database (`parts_db`) is heavily normalized to ensure data integr
 /Parts_DB
 │
 ├── /backend
-│   ├── /routes           # Express API endpoints (parts.js, escooters.js, diagrams.js, etc.)
-│   ├── /middleware       # auth.js (JWT validation)
+│   ├── /routes           # Express API endpoints (parts.js, escooters.js, diagrams.js, auth.js, etc.)
+│   ├── /middleware       # auth.js (JWT validation), admin.js (Admin privilege guard)
 │   ├── db.js             # MySQL connection pool
 │   ├── schema.sql        # Master database schema script
+│   ├── init_db.js        # Automatic schema initializer script
+│   ├── seed.js           # Seeds sample brands and models
+│   ├── create_admin.js   # Generates default Admin account
 │   └── server.js         # Entry point for the backend API
 │
 ├── /frontend
 │   ├── /src
 │   │   ├── /components   # Reusable UI (Layout.jsx, Pagination.jsx)
-│   │   ├── /pages        # Main views (Parts.jsx, Escooters.jsx, Diagrams.jsx, etc.)
-│   │   ├── App.jsx       # React Router setup
+│   │   ├── /pages        # Main views (Parts.jsx, Escooters.jsx, Diagrams.jsx, Users.jsx, etc.)
+│   │   ├── App.jsx       # React Router setup and AdminRoute guard
 │   │   └── index.css     # Global CSS variables and design tokens
 │   └── index.html
 │
 └── /uploads              # Static directory for part photos and schematic diagrams
 ```
 
+---
+
 ## 6. How to Run Locally
 
-1.  **Database**: Ensure MySQL/MariaDB is running. Run `backend/schema.sql` to generate the structure.
-2.  **Backend**:
-    *   `cd backend`
-    *   Ensure `.env` contains `JWT_SECRET` and DB credentials.
-    *   Run `npm run dev` (Starts on port 5000).
-3.  **Frontend**:
-    *   `cd frontend`
-    *   Run `npm run dev` (Starts on port 5173).
-4.  **Access**: Open `http://localhost:5173` in your browser.
+### 1. Database Setup
+Ensure MySQL/MariaDB is running locally on port `3306`.
+Create a database named `parts_db` or execute the automatic initialization script:
+```bash
+cd backend
+node init_db.js
+node seed.js
+node create_admin.js
+```
+*Note: This instantiates all tables, seeds default brands/models, and creates the default admin user:*
+*   **Admin Email**: `admin@example.com`
+*   **Admin Password**: `admin123`
+
+### 2. Backend Server Setup
+Ensure `.env` in the `/backend` folder contains valid credentials:
+```env
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=parts_db
+JWT_SECRET=your_super_secret_jwt_key
+PORT=5000
+```
+Start the Express API:
+```bash
+npm run dev
+# Starts on http://localhost:5000
+```
+
+### 3. Frontend Server Setup
+Navigate into the `/frontend` directory and start the Vite dev server:
+```bash
+cd ../frontend
+npm run dev
+# Starts on http://localhost:5173
+```
+Open **[http://localhost:5173](http://localhost:5173)** in your browser.

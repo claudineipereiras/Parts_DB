@@ -1,73 +1,171 @@
-# Deployment Guide: Parts Management DB
+# Deployment Guide: Escooter Parts Database (v3.0)
 
-Deploying this PHP application to a live host provider (like HostGator, GoDaddy, DigitalOcean, or AWS) is extremely straightforward due to its zero-framework dependency structure.
+This guide walks you through deploying the modernized Escooter Parts Database application (built on React/Vite + Node.js/Express + MariaDB/MySQL) to a production environment. 
 
-This guide focuses on deploying using standard cPanel Shared Hosting environments since it is the most common for basic PHP/MySQL architectures, but the rules apply to standard VPS integrations as well.
+The application utilizes a decoupled architecture:
+1.  **Frontend**: Built with React (Vite) and compiled into static HTML/CSS/JS assets.
+2.  **Backend**: An Express.js REST API server running on Node.js.
+3.  **Database**: MariaDB or MySQL.
 
-\---
+---
 
-## 1\. Hosting Requirements
+## 1. Hosting Requirements & Prerequisites
 
-Before you begin, ensure your hosting provider meets these minimal configurations:
+Before deploying, ensure your server has the following installed:
+*   **Operating System**: Linux (Ubuntu 20.04/22.04 LTS recommended) or Windows Server.
+*   **Node.js**: `v18.0.0` or higher.
+*   **Process Manager**: **PM2** (installed globally: `npm install -g pm2`) to ensure the Node backend runs continuously.
+*   **Database Engine**: MySQL `5.7+` or MariaDB `10.4+`.
+*   **Web Server / Reverse Proxy**: **Nginx** (highly recommended) or Apache.
 
-* **PHP Version**: `8.0` or higher recommended.
-* **Enabled PHP Extensions**: `pdo`, `pdo\\\_mysql`, `fileinfo` (for uploading images)
-* **Database**: MySQL `5.7+` or MariaDB `10.4+`
-* **Web Server**: Apache or Nginx
+---
 
-## 2\. Setting Up The Database
+## 2. Relational Database Deployment
 
-1. Log in to your Host Provider control panel (e.g., cPanel).
-2. Navigate to your **MySQL Databases** section.
-3. **Create a Database**: Give it a name (e.g., `company\\\_partsdb`), and note this name down.
-4. **Create a Database User**: Generate a User and strict Password (e.g., `parts\\\_user` / `pAssword123!`), and assign it to the created Database. **Grant All Privileges** to this user for this database.
-5. Launch **phpMyAdmin** (or any database GUI provided).
-6. Select your new database and locate the **Import** tab.
-7. Upload the local `schema.sql` file located in your project repository to instantiate all tables (`PART`, `HT\\\_JOBS`, `PART\\\_LIST`) into your live database.
+1.  **Log in to your MySQL/MariaDB instance**:
+    ```bash
+    mysql -u root -p
+    ```
+2.  **Create the database and a secure dedicated user**:
+    ```sql
+    CREATE DATABASE parts_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE USER 'parts_admin'@'localhost' IDENTIFIED BY 'YourStrongPassword123!';
+    GRANT ALL PRIVILEGES ON parts_db.* TO 'parts_admin'@'localhost';
+    FLUSH PRIVILEGES;
+    EXIT;
+    ```
+3.  **Initialize the Schema & Admin Account**:
+    Import the SQL tables using the backend scripts, or run them from the repository folder:
+    ```bash
+    cd /path/to/project/backend
+    
+    # Configure your DB connection strings first (see Step 3)
+    node init_db.js
+    node seed.js
+    node create_admin.js
+    ```
+    *This automatically creates all necessary indices, tables, default brand/escooter data, and sets up the admin account (`admin@example.com` / `admin123`).*
 
-*Note: Depending on recent local updates you might need to adjust the `HT\\\_JOBS` schema ENUMS from `close` to `completed` natively, or let the local codebase dictate insertion updates.*
+---
 
-## 3\. Uploading Codebase
+## 3. Backend (API) Server Deployment
 
-1. Gather all files in your primary `Parts\\\_DB` folder locally (index.php, jobs.php, assets folder, uploads folder, etc.).
-2. Go back to your hosting **File Manager**.
-3. Navigate to your Domain's public root directory (Usually listed as `public\\\_html/` or `www/`).
-4. Upload all files into this root folder.
+1.  **Install dependencies**:
+    From your backend folder, install production dependencies only to save disk footprint:
+    ```bash
+    cd /path/to/project/backend
+    npm install --omit=dev
+    ```
+2.  **Configure environment variables**:
+    Create a production `.env` file inside the `backend` folder:
+    ```env
+    DB_HOST=127.0.0.1
+    DB_USER=parts_admin
+    DB_PASSWORD=YourStrongPassword123!
+    DB_NAME=parts_db
+    JWT_SECRET=use_a_very_long_random_hash_string_here_for_security
+    PORT=5000
+    ```
+3.  **Manage and daemonize backend using PM2**:
+    Start the Express API using PM2 so it stays alive in the background and recovers on crashes/server restarts:
+    ```bash
+    pm2 start server.js --name "escooter-parts-api"
+    ```
+    To ensure the PM2 daemon starts up on machine reboot:
+    ```bash
+    pm2 startup
+    pm2 save
+    ```
 
-   * *Tip: Compress your files locally into a single `.zip` file, upload it into `public\\\_html/`, and Extract it natively in the File Manager to save upload time.*
+---
 
-## 4\. Configuring The Connection (`config.php`)
+## 4. Frontend Compilation & Serving
 
-Now that your files and database live securely on the host, bridge them to talk to each other:
+The React frontend needs to be compiled to static assets before deployment. 
 
-1. Inside your hosting file manager, locate the `config.php` file and choose **Edit**.
-2. Replace your local development variables with your newly created live Host Databases credentials:
+1.  **Build Frontend locally or on server**:
+    ```bash
+    cd /path/to/project/frontend
+    npm install
+    npm run build
+    ```
+    *This generates a standalone `/dist` folder containing the optimized production assets (`index.html`, JavaScript bundles, and global CSS).*
+2.  **Upload Static Assets**:
+    Copy the contents of the `frontend/dist` folder to your server's web root directory (e.g., `/var/www/escooter-parts-db/`).
 
-```php
-<?php
-$host = 'localhost'; // Usually 'localhost' locally resolves directly on cPanel hosts. (Otherwise, use host IP)
-$db   = 'your\\\_cpanel\\\_database\\\_name'; 
-$user = 'your\\\_cpanel\\\_database\\\_user'; 
-$pass = 'your\\\_secure\\\_password'; 
-$charset = 'utf8mb4';
+---
 
-// Please leave the $dsn and PDO execution blocks alone.
+## 5. Web Server Configuration (Nginx Reverse Proxy)
+
+To expose both the frontend and backend on port 80 (HTTP) or 443 (HTTPS) under a single domain, use Nginx as a reverse proxy.
+
+Below is an optimized Nginx server block configuration (`/etc/nginx/sites-available/escooter-parts`):
+
+```nginx
+server {
+    listen 80;
+    server_name escooterparts.yourdomain.com; # Replace with your domain
+
+    root /var/www/escooter-parts-db;
+    index index.html;
+
+    # 1. Frontend Router Handler (SPA)
+    # Redirects all traffic to index.html so React Router can process pages
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 2. Reverse Proxy for Backend API requests
+    location /api/ {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # 3. Serving Static Uploads directly via Nginx for maximum performance
+    location /uploads/ {
+        alias /path/to/project/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+
+    # 4. Upload Size limit adjustment for Bulk CSV and Large Images
+    client_max_body_size 20M;
+}
 ```
 
-3. Click **Save**.
+Enable the configuration and reload Nginx:
+```bash
+sudo ln -s /etc/nginx/sites-available/escooter-parts /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
 
-## 5\. Directory Permissions
+---
 
-For users to be able to seamlessly upload photo proofs:
+## 6. Directory Permissions
 
-1. Locate the `uploads/` folder in your File Manager.
-2. Select it and click **Change Permissions** (sometimes labeled as properties).
-3. Ensure its permission status is set up strictly allowing write access **(Set to `755`)** so the `upload\\\_photo.php` endpoint can accurately place files fetched inside without receiving `403 Forbidden` restriction kicks.
+For users to successfully upload part pictures and schematic diagrams:
+1.  Verify the `/uploads/` directory exists in the project root.
+2.  Set the ownership to the web server user (usually `www-data` on Linux) so the Node/Express service can write files dynamically:
+    ```bash
+    sudo chown -R www-data:www-data /path/to/project/uploads
+    sudo chmod -R 755 /path/to/project/uploads
+    ```
 
-## 6\. Access and Verify
+---
 
-1. Navigate securely to your domain link: `https://yourdomain.com`
-2. Explore the live UI. Verify database structures by attempting to 'Create a New Job' or attaching a mockup Part and picture upload to test `pdo` validation loops seamlessly.
+## 7. Security Best Practices
 
-🎉 **Congratulations! Your system is fully operational online.**
-
+*   **SSL/TLS (HTTPS)**: Secure the traffic using a free Let's Encrypt certificate:
+    ```bash
+    sudo apt install certbot python3-certbot-nginx
+    sudo certbot --nginx -d escooterparts.yourdomain.com
+    ```
+*   **Database Protection**: Never expose port `3306` to public traffic. Bind MySQL/MariaDB to `127.0.0.1` locally only.
+*   **Secrets Storage**: Rotate `JWT_SECRET` keys regularly and never commit `.env` files to remote version control (GitHub/GitLab).

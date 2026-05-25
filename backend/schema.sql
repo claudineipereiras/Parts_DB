@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    status ENUM('Active', 'Inactive', 'Requested') DEFAULT 'Requested'
+    status ENUM('Active', 'Inactive', 'Requested') DEFAULT 'Requested',
+    role ENUM('Admin', 'User') DEFAULT 'User'
 );
 
 CREATE TABLE IF NOT EXISTS brand (

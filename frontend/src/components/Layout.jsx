@@ -53,12 +53,14 @@ const Layout = () => {
               System settings
             </NavLink>
           </li>
-          <li>
-            <NavLink to="/users" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
-              <Users size={20} />
-              User settings
-            </NavLink>
-          </li>
+          {user.role === 'Admin' && (
+            <li>
+              <NavLink to="/users" className={({isActive}) => isActive ? "nav-item active" : "nav-item"}>
+                <Users size={20} />
+                User settings
+              </NavLink>
+            </li>
+          )}
           <li style={{ marginTop: 'auto', paddingTop: '12px' }}>
             <button 
               onClick={() => setShowLogoutConfirm(true)}
